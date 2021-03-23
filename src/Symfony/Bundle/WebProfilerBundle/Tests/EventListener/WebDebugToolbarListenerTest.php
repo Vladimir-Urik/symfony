@@ -12,11 +12,13 @@
 namespace Symfony\Bundle\WebProfilerBundle\Tests\EventListener;
 
 use PHPUnit\Framework\TestCase;
+use Symfony\Bundle\WebProfilerBundle\Csp\ContentSecurityPolicyHandler;
 use Symfony\Bundle\WebProfilerBundle\EventListener\WebDebugToolbarListener;
 use Symfony\Component\HttpFoundation\HeaderBag;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\Session\Session;
+use Symfony\Component\HttpKernel\DataCollector\DumpDataCollector;
 use Symfony\Component\HttpKernel\Event\ResponseEvent;
 use Symfony\Component\HttpKernel\HttpKernelInterface;
 use Symfony\Component\HttpKernel\Kernel;
@@ -65,7 +67,7 @@ class WebDebugToolbarListenerTest extends TestCase
     {
         $response = new Response('Some content', $statusCode);
         $response->headers->set('X-Debug-Token', 'xxxxxxxx');
-        $event = new ResponseEvent($this->createMock(Kernel::class), $this->getRequestMock(false, 'html', $hasSession), HttpKernelInterface::MASTER_REQUEST, $response);
+        $event = new ResponseEvent($this->createMock(Kernel::class), $this->getRequestMock(false, 'html', $hasSession), HttpKernelInterface::MAIN_REQUEST, $response);
 
         $listener = new WebDebugToolbarListener($this->getTwigMock('Redirection'), true);
         $listener->onKernelResponse($event);
@@ -78,7 +80,7 @@ class WebDebugToolbarListenerTest extends TestCase
     {
         $response = new Response('Some content', '301');
         $response->headers->set('X-Debug-Token', 'xxxxxxxx');
-        $event = new ResponseEvent($this->createMock(Kernel::class), $this->getRequestMock(false, 'json', true), HttpKernelInterface::MASTER_REQUEST, $response);
+        $event = new ResponseEvent($this->createMock(Kernel::class), $this->getRequestMock(false, 'json', true), HttpKernelInterface::MAIN_REQUEST, $response);
 
         $listener = new WebDebugToolbarListener($this->getTwigMock('Redirection'), true);
         $listener->onKernelResponse($event);
@@ -92,7 +94,7 @@ class WebDebugToolbarListenerTest extends TestCase
         $response = new Response('<html><head></head><body></body></html>');
         $response->headers->set('X-Debug-Token', 'xxxxxxxx');
 
-        $event = new ResponseEvent($this->createMock(Kernel::class), $this->getRequestMock(), HttpKernelInterface::MASTER_REQUEST, $response);
+        $event = new ResponseEvent($this->createMock(Kernel::class), $this->getRequestMock(), HttpKernelInterface::MAIN_REQUEST, $response);
 
         $listener = new WebDebugToolbarListener($this->getTwigMock());
         $listener->onKernelResponse($event);
@@ -108,7 +110,7 @@ class WebDebugToolbarListenerTest extends TestCase
         $response = new Response('<html><head></head><body></body></html>');
         $response->headers->set('X-Debug-Token', 'xxxxxxxx');
         $response->headers->set('Content-Type', 'text/xml');
-        $event = new ResponseEvent($this->createMock(Kernel::class), $this->getRequestMock(), HttpKernelInterface::MASTER_REQUEST, $response);
+        $event = new ResponseEvent($this->createMock(Kernel::class), $this->getRequestMock(), HttpKernelInterface::MAIN_REQUEST, $response);
 
         $listener = new WebDebugToolbarListener($this->getTwigMock());
         $listener->onKernelResponse($event);
@@ -124,7 +126,7 @@ class WebDebugToolbarListenerTest extends TestCase
         $response = new Response('<html><head></head><body></body></html>');
         $response->headers->set('X-Debug-Token', 'xxxxxxxx');
         $response->headers->set('Content-Disposition', 'attachment; filename=test.html');
-        $event = new ResponseEvent($this->createMock(Kernel::class), $this->getRequestMock(false, 'html'), HttpKernelInterface::MASTER_REQUEST, $response);
+        $event = new ResponseEvent($this->createMock(Kernel::class), $this->getRequestMock(false, 'html'), HttpKernelInterface::MAIN_REQUEST, $response);
 
         $listener = new WebDebugToolbarListener($this->getTwigMock());
         $listener->onKernelResponse($event);
@@ -140,7 +142,7 @@ class WebDebugToolbarListenerTest extends TestCase
     {
         $response = new Response('<html><head></head><body></body></html>', $statusCode);
         $response->headers->set('X-Debug-Token', 'xxxxxxxx');
-        $event = new ResponseEvent($this->createMock(Kernel::class), $this->getRequestMock(false, 'html', $hasSession), HttpKernelInterface::MASTER_REQUEST, $response);
+        $event = new ResponseEvent($this->createMock(Kernel::class), $this->getRequestMock(false, 'html', $hasSession), HttpKernelInterface::MAIN_REQUEST, $response);
 
         $listener = new WebDebugToolbarListener($this->getTwigMock());
         $listener->onKernelResponse($event);
@@ -165,7 +167,7 @@ class WebDebugToolbarListenerTest extends TestCase
     {
         $response = new Response('<html><head></head><body></body></html>');
 
-        $event = new ResponseEvent($this->createMock(Kernel::class), $this->getRequestMock(), HttpKernelInterface::MASTER_REQUEST, $response);
+        $event = new ResponseEvent($this->createMock(Kernel::class), $this->getRequestMock(), HttpKernelInterface::MAIN_REQUEST, $response);
 
         $listener = new WebDebugToolbarListener($this->getTwigMock());
         $listener->onKernelResponse($event);
@@ -197,7 +199,7 @@ class WebDebugToolbarListenerTest extends TestCase
         $response = new Response('<div>Some content</div>');
         $response->headers->set('X-Debug-Token', 'xxxxxxxx');
 
-        $event = new ResponseEvent($this->createMock(Kernel::class), $this->getRequestMock(), HttpKernelInterface::MASTER_REQUEST, $response);
+        $event = new ResponseEvent($this->createMock(Kernel::class), $this->getRequestMock(), HttpKernelInterface::MAIN_REQUEST, $response);
 
         $listener = new WebDebugToolbarListener($this->getTwigMock());
         $listener->onKernelResponse($event);
@@ -213,7 +215,7 @@ class WebDebugToolbarListenerTest extends TestCase
         $response = new Response('<html><head></head><body></body></html>');
         $response->headers->set('X-Debug-Token', 'xxxxxxxx');
 
-        $event = new ResponseEvent($this->createMock(Kernel::class), $this->getRequestMock(true), HttpKernelInterface::MASTER_REQUEST, $response);
+        $event = new ResponseEvent($this->createMock(Kernel::class), $this->getRequestMock(true), HttpKernelInterface::MAIN_REQUEST, $response);
 
         $listener = new WebDebugToolbarListener($this->getTwigMock());
         $listener->onKernelResponse($event);
@@ -229,7 +231,7 @@ class WebDebugToolbarListenerTest extends TestCase
         $response = new Response('<html><head></head><body></body></html>');
         $response->headers->set('X-Debug-Token', 'xxxxxxxx');
 
-        $event = new ResponseEvent($this->createMock(Kernel::class), $this->getRequestMock(false, 'json'), HttpKernelInterface::MASTER_REQUEST, $response);
+        $event = new ResponseEvent($this->createMock(Kernel::class), $this->getRequestMock(false, 'json'), HttpKernelInterface::MAIN_REQUEST, $response);
 
         $listener = new WebDebugToolbarListener($this->getTwigMock());
         $listener->onKernelResponse($event);
@@ -250,7 +252,7 @@ class WebDebugToolbarListenerTest extends TestCase
             ->willReturn('http://mydomain.com/_profiler/xxxxxxxx')
         ;
 
-        $event = new ResponseEvent($this->createMock(Kernel::class), $this->getRequestMock(), HttpKernelInterface::MASTER_REQUEST, $response);
+        $event = new ResponseEvent($this->createMock(Kernel::class), $this->getRequestMock(), HttpKernelInterface::MAIN_REQUEST, $response);
 
         $listener = new WebDebugToolbarListener($this->getTwigMock(), false, WebDebugToolbarListener::ENABLED, $urlGenerator);
         $listener->onKernelResponse($event);
@@ -271,7 +273,7 @@ class WebDebugToolbarListenerTest extends TestCase
             ->willThrowException(new \Exception('foo'))
         ;
 
-        $event = new ResponseEvent($this->createMock(Kernel::class), $this->getRequestMock(), HttpKernelInterface::MASTER_REQUEST, $response);
+        $event = new ResponseEvent($this->createMock(Kernel::class), $this->getRequestMock(), HttpKernelInterface::MAIN_REQUEST, $response);
 
         $listener = new WebDebugToolbarListener($this->getTwigMock(), false, WebDebugToolbarListener::ENABLED, $urlGenerator);
         $listener->onKernelResponse($event);
@@ -292,12 +294,54 @@ class WebDebugToolbarListenerTest extends TestCase
             ->willThrowException(new \Exception("This\nmultiline\r\ntabbed text should\tcome out\r on\n \ta single plain\r\nline"))
         ;
 
-        $event = new ResponseEvent($this->createMock(Kernel::class), $this->getRequestMock(), HttpKernelInterface::MASTER_REQUEST, $response);
+        $event = new ResponseEvent($this->createMock(Kernel::class), $this->getRequestMock(), HttpKernelInterface::MAIN_REQUEST, $response);
 
         $listener = new WebDebugToolbarListener($this->getTwigMock(), false, WebDebugToolbarListener::ENABLED, $urlGenerator);
         $listener->onKernelResponse($event);
 
         $this->assertEquals('Exception: This multiline tabbed text should come out on a single plain line', $response->headers->get('X-Debug-Error'));
+    }
+
+    public function testCspIsDisabledIfDumperWasUsed()
+    {
+        $response = new Response('<html><head></head><body></body></html>');
+        $response->headers->set('X-Debug-Token', 'xxxxxxxx');
+
+        $event = new ResponseEvent($this->createMock(Kernel::class), $this->getRequestMock(), HttpKernelInterface::MAIN_REQUEST, $response);
+
+        $cspHandler = $this->createMock(ContentSecurityPolicyHandler::class);
+        $cspHandler->expects($this->once())
+            ->method('disableCsp');
+        $dumpDataCollector = $this->createMock(DumpDataCollector::class);
+        $dumpDataCollector->expects($this->once())
+            ->method('getDumpsCount')
+            ->willReturn(1);
+
+        $listener = new WebDebugToolbarListener($this->getTwigMock(), false, WebDebugToolbarListener::ENABLED, null, '', $cspHandler, $dumpDataCollector);
+        $listener->onKernelResponse($event);
+
+        $this->assertEquals("<html><head></head><body>\nWDT\n</body></html>", $response->getContent());
+    }
+
+    public function testCspIsKeptEnabledIfDumperWasNotUsed()
+    {
+        $response = new Response('<html><head></head><body></body></html>');
+        $response->headers->set('X-Debug-Token', 'xxxxxxxx');
+
+        $event = new ResponseEvent($this->createMock(Kernel::class), $this->getRequestMock(), HttpKernelInterface::MAIN_REQUEST, $response);
+
+        $cspHandler = $this->createMock(ContentSecurityPolicyHandler::class);
+        $cspHandler->expects($this->never())
+            ->method('disableCsp');
+        $dumpDataCollector = $this->createMock(DumpDataCollector::class);
+        $dumpDataCollector->expects($this->once())
+            ->method('getDumpsCount')
+            ->willReturn(0);
+
+        $listener = new WebDebugToolbarListener($this->getTwigMock(), false, WebDebugToolbarListener::ENABLED, null, '', $cspHandler, $dumpDataCollector);
+        $listener->onKernelResponse($event);
+
+        $this->assertEquals("<html><head></head><body>\nWDT\n</body></html>", $response->getContent());
     }
 
     protected function getRequestMock($isXmlHttpRequest = false, $requestFormat = 'html', $hasSession = true)

@@ -12,6 +12,7 @@
 namespace Symfony\Bundle\FrameworkBundle\DependencyInjection;
 
 use Doctrine\Common\Annotations\Annotation;
+use Doctrine\Common\Annotations\PsrCachedReader;
 use Doctrine\Common\Cache\Cache;
 use Doctrine\DBAL\Connection;
 use Symfony\Bundle\FullStack;
@@ -303,7 +304,8 @@ class Configuration implements ConfigurationInterface
                     ->children()
                         ->booleanNode('collect')->defaultTrue()->end()
                         ->booleanNode('only_exceptions')->defaultFalse()->end()
-                        ->booleanNode('only_master_requests')->defaultFalse()->end()
+                        ->booleanNode('only_main_requests')->defaultFalse()->end()
+                        ->booleanNode('only_master_requests')->setDeprecated('symfony/framework-bundle', '5.3', 'Option "%node%" at "%path%" is deprecated, use "only_main_requests" instead.')->defaultFalse()->end()
                         ->scalarNode('dsn')->defaultValue('file:%kernel.cache_dir%/profiler')->end()
                     ->end()
                 ->end()
@@ -921,13 +923,16 @@ class Configuration implements ConfigurationInterface
 
     private function addAnnotationsSection(ArrayNodeDefinition $rootNode, callable $willBeAvailable)
     {
+        $doctrineCache = $willBeAvailable('doctrine/cache', Cache::class, 'doctrine/annotation');
+        $psr6Cache = $willBeAvailable('symfony/cache', PsrCachedReader::class, 'doctrine/annotation');
+
         $rootNode
             ->children()
                 ->arrayNode('annotations')
                     ->info('annotation configuration')
                     ->{$willBeAvailable('doctrine/annotations', Annotation::class) ? 'canBeDisabled' : 'canBeEnabled'}()
                     ->children()
-                        ->scalarNode('cache')->defaultValue($willBeAvailable('doctrine/cache', Cache::class, 'doctrine/annotation') ? 'php_array' : 'none')->end()
+                        ->scalarNode('cache')->defaultValue(($doctrineCache || $psr6Cache) ? 'php_array' : 'none')->end()
                         ->scalarNode('file_cache_dir')->defaultValue('%kernel.cache_dir%/annotations')->end()
                         ->booleanNode('debug')->defaultValue($this->debug)->end()
                     ->end()

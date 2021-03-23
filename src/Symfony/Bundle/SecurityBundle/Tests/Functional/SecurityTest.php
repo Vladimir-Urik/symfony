@@ -13,7 +13,8 @@ namespace Symfony\Bundle\SecurityBundle\Tests\Functional;
 
 use Symfony\Bundle\SecurityBundle\Tests\Functional\Bundle\SecuredPageBundle\Security\Core\User\ArrayUserProvider;
 use Symfony\Component\Security\Core\Authentication\Token\UsernamePasswordToken;
-use Symfony\Component\Security\Core\User\User;
+use Symfony\Component\Security\Core\User\InMemoryUser;
+use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 
 class SecurityTest extends AbstractWebTestCase
@@ -25,7 +26,7 @@ class SecurityTest extends AbstractWebTestCase
         $container = $kernel->getContainer();
 
         // put a token into the storage so the final calls can function
-        $user = new User('foo', 'pass');
+        $user = new InMemoryUser('foo', 'pass');
         $token = new UsernamePasswordToken($user, '', 'provider', ['ROLE_USER']);
         $container->get('security.token_storage')->setToken($token);
 
@@ -38,8 +39,8 @@ class SecurityTest extends AbstractWebTestCase
     {
         return [
             [
-                new User('user1', 'test', ['ROLE_ADMIN']),
-                new User('user1', 'test', ['ROLE_USER']),
+                new InMemoryUser('user1', 'test', ['ROLE_ADMIN']),
+                new InMemoryUser('user1', 'test', ['ROLE_USER']),
             ],
             [
                 new UserWithoutEquatable('user1', 'test', ['ROLE_ADMIN']),
@@ -78,7 +79,7 @@ class SecurityTest extends AbstractWebTestCase
     }
 }
 
-final class UserWithoutEquatable implements UserInterface
+final class UserWithoutEquatable implements UserInterface, PasswordAuthenticatedUserInterface
 {
     private $username;
     private $password;
@@ -119,7 +120,7 @@ final class UserWithoutEquatable implements UserInterface
     /**
      * {@inheritdoc}
      */
-    public function getPassword()
+    public function getPassword(): ?string
     {
         return $this->password;
     }

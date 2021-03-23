@@ -20,6 +20,9 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 
 class TestServiceContainerTest extends AbstractWebTestCase
 {
+    /**
+     * @group legacy
+     */
     public function testThatPrivateServicesAreUnavailableIfTestConfigIsDisabled()
     {
         static::bootKernel(['test_case' => 'TestServiceContainer', 'root_config' => 'test_disabled.yml', 'environment' => 'test_disabled']);
@@ -33,6 +36,9 @@ class TestServiceContainerTest extends AbstractWebTestCase
         $this->assertFalse(static::$container->has(UnusedPrivateService::class));
     }
 
+    /**
+     * @group legacy
+     */
     public function testThatPrivateServicesAreAvailableIfTestConfigIsEnabled()
     {
         static::bootKernel(['test_case' => 'TestServiceContainer']);

@@ -15,8 +15,9 @@ use PHPUnit\Framework\TestCase;
 use Symfony\Component\Security\Core\Exception\UnsupportedUserException;
 use Symfony\Component\Security\Core\Exception\UsernameNotFoundException;
 use Symfony\Component\Security\Core\User\ChainUserProvider;
+use Symfony\Component\Security\Core\User\InMemoryUser;
+use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\PasswordUpgraderInterface;
-use Symfony\Component\Security\Core\User\User;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Security\Core\User\UserProviderInterface;
 
@@ -249,16 +250,16 @@ class ChainUserProviderTest extends TestCase
 
     public function testPasswordUpgrades()
     {
-        $user = new User('user', 'pwd');
+        $user = new InMemoryUser('user', 'pwd');
 
-        $provider1 = $this->createMock(PasswordUpgraderInterface::class);
+        $provider1 = $this->getMockForAbstractClass(MigratingProvider::class);
         $provider1
             ->expects($this->once())
             ->method('upgradePassword')
             ->willThrowException(new UnsupportedUserException('unsupported'))
         ;
 
-        $provider2 = $this->createMock(PasswordUpgraderInterface::class);
+        $provider2 = $this->getMockForAbstractClass(MigratingProvider::class);
         $provider2
             ->expects($this->once())
             ->method('upgradePassword')
@@ -268,4 +269,9 @@ class ChainUserProviderTest extends TestCase
         $provider = new ChainUserProvider([$provider1, $provider2]);
         $provider->upgradePassword($user, 'foobar');
     }
+}
+
+abstract class MigratingProvider implements PasswordUpgraderInterface
+{
+    abstract public function upgradePassword(PasswordAuthenticatedUserInterface $user, string $newHashedPassword): void;
 }

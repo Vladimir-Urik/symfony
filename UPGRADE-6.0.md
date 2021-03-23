@@ -78,6 +78,7 @@ FrameworkBundle
  * The `form.factory`, `form.type.file`, `translator`, `security.csrf.token_manager`, `serializer`,
    `cache_clearer`, `filesystem` and `validator` services are now private.
  * Removed the `lock.RESOURCE_NAME` and `lock.RESOURCE_NAME.store` services and the `lock`, `LockInterface`, `lock.store` and `PersistingStoreInterface` aliases, use `lock.RESOURCE_NAME.factory`, `lock.factory` or `LockFactory` instead.
+ * Remove the `KernelTestCase::$container` property, use `KernelTestCase::getContainer()` instead
 
 HttpFoundation
 --------------
@@ -88,12 +89,18 @@ HttpFoundation
    `BinaryFileResponse::create()` methods (use `__construct()` instead)
  * Not passing a `Closure` together with `FILTER_CALLBACK` to `ParameterBag::filter()` throws an `InvalidArgumentException`; wrap your filter in a closure instead.
  * Removed the `Request::HEADER_X_FORWARDED_ALL` constant, use either `Request::HEADER_X_FORWARDED_FOR | Request::HEADER_X_FORWARDED_HOST | Request::HEADER_X_FORWARDED_PORT | Request::HEADER_X_FORWARDED_PROTO` or `Request::HEADER_X_FORWARDED_AWS_ELB` or `Request::HEADER_X_FORWARDED_TRAEFIK`constants instead.
+ * Rename `RequestStack::getMasterRequest()` to `getMainRequest()`
 
 HttpKernel
 ----------
 
- * Made `WarmableInterface::warmUp()` return a list of classes or files to preload on PHP 7.4+
- * Removed support for `service:action` syntax to reference controllers. Use `serviceOrFqcn::method` instead.
+ * Remove `ArgumentInterface`
+ * Remove `ArgumentMetadata::getAttribute()`, use `getAttributes()` instead
+ * Make `WarmableInterface::warmUp()` return a list of classes or files to preload on PHP 7.4+
+ * Remove support for `service:action` syntax to reference controllers. Use `serviceOrFqcn::method` instead.
+ * Remove support for returning a `ContainerBuilder` from `KernelInterface::registerContainerConfiguration()`
+ * Rename `HttpKernelInterface::MASTER_REQUEST` to `MAIN_REQUEST`
+ * Rename `KernelEvent::isMasterRequest()` to `isMainRequest()`
 
 Inflector
 ---------
@@ -150,6 +157,7 @@ PhpUnitBridge
 PropertyAccess
 --------------
 
+ * Drop support for booleans as the second argument of `PropertyAccessor::__construct()`, pass a combination of bitwise flags instead.
  * Dropped support for booleans as the first argument of `PropertyAccessor::__construct()`.
    Pass a combination of bitwise flags instead.
 
@@ -170,6 +178,94 @@ Routing
 Security
 --------
 
+ * Remove class `User`, use `InMemoryUser` or your own implementation instead.
+   If you are using the `isAccountNonLocked()`, `isAccountNonExpired()` or `isCredentialsNonExpired()` method, consider re-implementing them
+   in your own user class as they are not part of the `InMemoryUser` API
+ * Remove class `UserChecker`, use `InMemoryUserChecker` or your own implementation instead
+ * Remove `UserInterface::getPassword()`
+   If your `getPassword()` method does not return `null` (i.e. you are using password-based authentication),
+   you should implement `PasswordAuthenticatedUserInterface`.
+
+   Before:
+   ```php
+   use Symfony\Component\Security\Core\User\UserInterface;
+
+   class User implements UserInterface
+   {
+       // ...
+
+       public function getPassword()
+       {
+           return $this->password;
+       }
+   }
+   ```
+
+   After:
+   ```php
+   use Symfony\Component\Security\Core\User\UserInterface;
+   use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
+
+   class User implements UserInterface, PasswordAuthenticatedUserInterface
+   {
+       // ...
+
+       public function getPassword(): ?string
+       {
+           return $this->password;
+       }
+   }
+   ```
+
+ * Remove `UserInterface::getSalt()`
+   If your `getSalt()` method does not return `null` (i.e. you are using password-based authentication with an old password hash algorithm that requires user-provided salts),
+   implement `LegacyPasswordAuthenticatedUserInterface`.
+
+   Before:
+   ```php
+   use Symfony\Component\Security\Core\User\UserInterface;
+
+   class User implements UserInterface
+   {
+       // ...
+
+       public function getPassword()
+       {
+           return $this->password;
+       }
+
+       public function getSalt()
+       {
+           return $this->salt;
+       }
+   }
+   ```
+
+   After:
+   ```php
+   use Symfony\Component\Security\Core\User\UserInterface;
+   use Symfony\Component\Security\Core\User\LegacyPasswordAuthenticatedUserInterface;
+
+   class User implements UserInterface, LegacyPasswordAuthenticatedUserInterface
+   {
+       // ...
+
+       public function getPassword(): ?string
+       {
+           return $this->password;
+       }
+
+       public function getSalt(): ?string
+       {
+           return $this->salt;
+       }
+   }
+   ```
+
+ * Calling `PasswordUpgraderInterface::upgradePassword()` with a `UserInterface` instance that
+   does not implement `PasswordAuthenticatedUserInterface` now throws a `\TypeError`.
+ * Calling methods `hashPassword()`, `isPasswordValid()` and `needsRehash()` on `UserPasswordHasherInterface`
+   with a `UserInterface` instance that does not implement `PasswordAuthenticatedUserInterface` now throws a `\TypeError`
  * Drop all classes in the `Core\Encoder\`  sub-namespace, use the `PasswordHasher` component instead
  * Drop support for `SessionInterface $session` as constructor argument of `SessionTokenStorage`, inject a `\Symfony\Component\HttpFoundation\RequestStack $requestStack` instead
  * Drop support for `session` provided by the ServiceLocator injected in `UsageTrackingTokenStorage`, provide a `request_stack` service instead

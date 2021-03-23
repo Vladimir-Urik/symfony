@@ -23,7 +23,7 @@ use Symfony\Component\Uid\Uuid;
 class GenerateUuidCommand extends Command
 {
     protected static $defaultName = 'uuid:generate';
-    protected static $defaultDescription = 'Generates a UUID';
+    protected static $defaultDescription = 'Generate a UUID';
 
     private $factory;
 
@@ -131,7 +131,7 @@ EOF
                 }
 
                 try {
-                    $time = new \DateTimeImmutable($time);
+                    new \DateTimeImmutable($time);
                 } catch (\Exception $e) {
                     $io->error(sprintf('Invalid timestamp "%s": %s', $time, str_replace('DateTimeImmutable::__construct(): ', '', $e->getMessage())));
 
@@ -139,7 +139,7 @@ EOF
                 }
 
                 $create = function () use ($node, $time): Uuid {
-                    return $this->factory->timeBased($node)->create($time);
+                    return $this->factory->timeBased($node)->create(new \DateTimeImmutable($time));
                 };
                 break;
 

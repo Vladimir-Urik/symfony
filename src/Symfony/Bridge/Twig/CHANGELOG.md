@@ -1,6 +1,16 @@
 CHANGELOG
 =========
 
+5.3
+-----
+
+* Add a new `markAsPublic` method on `NotificationEmail` to change the `importance` context option to null after creation
+
+5.3.0
+-----
+
+* Added a new `serialize` filter to serialize objects using the Serializer component
+
 5.2.0
 -----
 

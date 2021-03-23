@@ -30,7 +30,7 @@ use Symfony\Component\HttpKernel\KernelInterface;
 class AboutCommand extends Command
 {
     protected static $defaultName = 'about';
-    protected static $defaultDescription = 'Displays information about the current project';
+    protected static $defaultDescription = 'Display information about the current project';
 
     /**
      * {@inheritdoc}
@@ -114,7 +114,9 @@ EOT
         } else {
             $size = 0;
             foreach (new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($path, \RecursiveDirectoryIterator::SKIP_DOTS | \RecursiveDirectoryIterator::FOLLOW_SYMLINKS)) as $file) {
-                $size += $file->getSize();
+                if ($file->isReadable()) {
+                    $size += $file->getSize();
+                }
             }
         }
 

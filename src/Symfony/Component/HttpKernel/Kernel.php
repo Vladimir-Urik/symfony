@@ -177,7 +177,7 @@ abstract class Kernel implements KernelInterface, RebootableInterface, Terminabl
     /**
      * {@inheritdoc}
      */
-    public function handle(Request $request, int $type = HttpKernelInterface::MASTER_REQUEST, bool $catch = true)
+    public function handle(Request $request, int $type = HttpKernelInterface::MAIN_REQUEST, bool $catch = true)
     {
         if (!$this->booted) {
             $container = $this->container ?? $this->preBoot();
@@ -466,7 +466,7 @@ abstract class Kernel implements KernelInterface, RebootableInterface, Terminabl
                 if (!flock($lock, $wouldBlock ? \LOCK_SH : \LOCK_EX)) {
                     fclose($lock);
                     $lock = null;
-                } elseif (!\is_object($this->container = include $cachePath)) {
+                } elseif (!is_file($cachePath) || !\is_object($this->container = include $cachePath)) {
                     $this->container = null;
                 } elseif (!$oldContainer || \get_class($this->container) !== $oldContainer->name) {
                     flock($lock, \LOCK_UN);
@@ -642,6 +642,7 @@ abstract class Kernel implements KernelInterface, RebootableInterface, Terminabl
         $this->prepareContainer($container);
 
         if (null !== $cont = $this->registerContainerConfiguration($this->getContainerLoader($container))) {
+            trigger_deprecation('symfony/http-kernel', '5.3', 'Returning a ContainerBuilder from "%s::registerContainerConfiguration()" is deprecated.', get_debug_type($this));
             $container->merge($cont);
         }
 

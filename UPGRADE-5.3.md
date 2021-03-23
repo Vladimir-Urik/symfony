@@ -35,16 +35,24 @@ FrameworkBundle
  * Deprecate the `session.storage` alias and `session.storage.*` services, use the `session.storage.factory` alias and `session.storage.factory.*` services instead
  * Deprecate the `framework.session.storage_id` configuration option, use the `framework.session.storage_factory_id` configuration option instead
  * Deprecate the `session` service and the `SessionInterface` alias, use the `\Symfony\Component\HttpFoundation\Request::getSession()` or the new `\Symfony\Component\HttpFoundation\RequestStack::getSession()` methods instead
+ * Deprecate the `KernelTestCase::$container` property, use `KernelTestCase::getContainer()` instead
+ * Rename the container parameter `profiler_listener.only_master_requests` to `profiler_listener.only_main_requests`
 
 HttpFoundation
 --------------
 
  * Deprecate the `NamespacedAttributeBag` class
+ * Deprecate the `RequestStack::getMasterRequest()` method and add `getMainRequest()` as replacement
 
 HttpKernel
 ----------
 
- * Marked the class `Symfony\Component\HttpKernel\EventListener\DebugHandlersListener` as internal
+ * Deprecate `ArgumentInterface`
+ * Deprecate `ArgumentMetadata::getAttribute()`, use `getAttributes()` instead
+ * Mark the class `Symfony\Component\HttpKernel\EventListener\DebugHandlersListener` as internal
+ * Deprecate returning a `ContainerBuilder` from `KernelInterface::registerContainerConfiguration()`
+ * Deprecate `HttpKernelInterface::MASTER_REQUEST` and add `HttpKernelInterface::MAIN_REQUEST` as replacement
+ * Deprecate `KernelEvent::isMasterRequest()` and add `isMainRequest()` as replacement
 
 Messenger
 ---------
@@ -65,6 +73,11 @@ PhpunitBridge
 
  * Deprecated the `SetUpTearDownTrait` trait, use original methods with "void" return typehint
 
+PropertyAccess
+--------------
+
+* Deprecate passing a boolean as the second argument of `PropertyAccessor::__construct()`, pass a combination of bitwise flags instead.
+
 PropertyInfo
 ------------
 
@@ -78,6 +91,93 @@ Routing
 Security
 --------
 
+ * Deprecate class `User`, use `InMemoryUser` or your own implementation instead.
+   If you are using the `isAccountNonLocked()`, `isAccountNonExpired()` or `isCredentialsNonExpired()` method, consider re-implementing
+   them in your own user class, as they are not part of the `InMemoryUser` API
+ * Deprecate class `UserChecker`, use `InMemoryUserChecker` or your own implementation instead
+ * [BC break] Remove support for passing a `UserInterface` implementation to `Passport`, use the `UserBadge` instead.
+ * Deprecate `UserInterface::getPassword()`
+   If your `getPassword()` method does not return `null` (i.e. you are using password-based authentication),
+   you should implement `PasswordAuthenticatedUserInterface`.
+
+   Before:
+   ```php
+   use Symfony\Component\Security\Core\User\UserInterface;
+
+   class User implements UserInterface
+   {
+       // ...
+
+       public function getPassword()
+       {
+           return $this->password;
+       }
+   }
+   ```
+
+   After:
+   ```php
+   use Symfony\Component\Security\Core\User\UserInterface;
+   use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
+
+   class User implements UserInterface, PasswordAuthenticatedUserInterface
+   {
+       // ...
+
+       public function getPassword(): ?string
+       {
+           return $this->password;
+       }
+   }
+   ```
+
+ * Deprecate `UserInterface::getSalt()`
+   If your `getSalt()` method does not return `null` (i.e. you are using password-based authentication with an old password hash algorithm that requires user-provided salts),
+   implement `LegacyPasswordAuthenticatedUserInterface`.
+
+   Before:
+   ```php
+   use Symfony\Component\Security\Core\User\UserInterface;
+
+   class User implements UserInterface
+   {
+       // ...
+
+       public function getPassword()
+       {
+           return $this->password;
+       }
+
+       public function getSalt()
+       {
+           return $this->salt;
+       }
+   }
+   ```
+
+   After:
+   ```php
+   use Symfony\Component\Security\Core\User\UserInterface;
+   use Symfony\Component\Security\Core\User\LegacyPasswordAuthenticatedUserInterface;
+
+   class User implements UserInterface, LegacyPasswordAuthenticatedUserInterface
+   {
+       // ...
+
+       public function getPassword(): ?string
+       {
+           return $this->password;
+       }
+
+       public function getSalt(): ?string
+       {
+           return $this->salt;
+       }
+   }
+   ```
+
+ * Deprecate calling `PasswordUpgraderInterface::upgradePassword()` with a `UserInterface` instance that does not implement `PasswordAuthenticatedUserInterface`
+ * Deprecate calling methods `hashPassword()`, `isPasswordValid()` and `needsRehash()` on `UserPasswordHasherInterface` with a `UserInterface` instance that does not implement `PasswordAuthenticatedUserInterface`
  * Deprecate all classes in the `Core\Encoder\`  sub-namespace, use the `PasswordHasher` component instead
  * Deprecated voters that do not return a valid decision when calling the `vote` method
 

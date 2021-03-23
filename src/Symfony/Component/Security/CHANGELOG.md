@@ -4,6 +4,11 @@ CHANGELOG
 5.3
 ---
 
+ * Deprecate class `User`, use `InMemoryUser` instead
+ * Deprecate class `UserChecker`, use `InMemoryUserChecker` or your own implementation instead
+ * [BC break] Remove support for passing a `UserInterface` implementation to `Passport`, use the `UserBadge` instead.
+ * Add `PasswordAuthenticatedUserInterface` for user classes that use passwords
+ * Add `LegacyPasswordAuthenticatedUserInterface` for user classes that use user-provided salts in addition to passwords
  * Deprecate all classes in the `Core\Encoder\`  sub-namespace, use the `PasswordHasher` component instead
  * Deprecate the `SessionInterface $session` constructor argument of `SessionTokenStorage`, inject a `\Symfony\Component\HttpFoundation\RequestStack $requestStack` instead
  * Deprecate the `session` service provided by the ServiceLocator injected in `UsageTrackingTokenStorage`, provide a `request_stack` service instead

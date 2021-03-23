@@ -9,7 +9,7 @@
  * file that was distributed with this source code.
  */
 
-namespace Symfony\Component\String\Tests;
+namespace Symfony\Component\String\Tests\Inflector;
 
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\String\Inflector\EnglishInflector;
@@ -58,6 +58,7 @@ class EnglishInflectorTest extends TestCase
             ['crises', ['cris', 'crise', 'crisis']],
             ['criteria', ['criterion', 'criterium']],
             ['cups', 'cup'],
+            ['coupons', 'coupon'],
             ['data', 'data'],
             ['days', 'day'],
             ['discos', 'disco'],
@@ -201,6 +202,7 @@ class EnglishInflectorTest extends TestCase
             ['crisis', 'crises'],
             ['criteria', 'criterion'],
             ['cup', 'cups'],
+            ['coupon', 'coupons'],
             ['data', 'data'],
             ['day', 'days'],
             ['disco', 'discos'],

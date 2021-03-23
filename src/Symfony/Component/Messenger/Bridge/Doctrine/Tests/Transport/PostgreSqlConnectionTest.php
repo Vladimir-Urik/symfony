@@ -49,7 +49,13 @@ class PostgreSqlConnectionTest extends TestCase
 
         $table = new Table('queue_table');
         $table->addOption('_symfony_messenger_table_name', 'queue_table');
-        $this->assertStringContainsString('CREATE TRIGGER', implode("\n", $connection->getExtraSetupSqlForTable($table)));
+        $sql = implode("\n", $connection->getExtraSetupSqlForTable($table));
+
+        $this->assertStringContainsString('CREATE TRIGGER', $sql);
+
+        // We MUST NOT use transaction, that will mess with the PDO in PHP 8
+        $this->assertStringNotContainsString('BEGIN;', $sql);
+        $this->assertStringNotContainsString('COMMIT;', $sql);
     }
 
     public function testGetExtraSetupSqlWrongTable()

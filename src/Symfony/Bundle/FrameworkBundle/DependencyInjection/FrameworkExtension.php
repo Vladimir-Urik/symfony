@@ -711,7 +711,7 @@ class FrameworkExtension extends Extension
         }
 
         $container->setParameter('profiler_listener.only_exceptions', $config['only_exceptions']);
-        $container->setParameter('profiler_listener.only_master_requests', $config['only_master_requests']);
+        $container->setParameter('profiler_listener.only_main_requests', $config['only_main_requests'] || $config['only_master_requests']);
 
         // Choose storage class based on the DSN
         [$class] = explode(':', $config['dsn'], 2);
@@ -1481,12 +1481,49 @@ class FrameworkExtension extends Extension
                 ->setMethodCalls([['registerLoader', ['class_exists']]]);
         }
 
-        if ('none' !== $config['cache']) {
+        if ('none' === $config['cache']) {
+            $container->removeDefinition('annotations.cached_reader');
+            $container->removeDefinition('annotations.psr_cached_reader');
+
+            return;
+        }
+
+        $cacheService = $config['cache'];
+        if (\in_array($config['cache'], ['php_array', 'file'])) {
+            $isPsr6Service = $container->hasDefinition('annotations.psr_cached_reader');
+        } else {
+            $isPsr6Service = false;
+            trigger_deprecation('symfony/framework-bundle', '5.3', 'Using a custom service for "framework.annotation.cache" is deprecated, only values "none", "php_array" and "file" are valid in version 6.0.');
+        }
+
+        if ($isPsr6Service) {
+            $container->removeDefinition('annotations.cached_reader');
+            $container->setDefinition('annotations.cached_reader', $container->getDefinition('annotations.psr_cached_reader'));
+
+            if ('php_array' === $config['cache']) {
+                $cacheService = 'annotations.psr_cache';
+
+                // Enable warmer only if PHP array is used for cache
+                $definition = $container->findDefinition('annotations.cache_warmer');
+                $definition->addTag('kernel.cache_warmer');
+            } elseif ('file' === $config['cache']) {
+                $cacheService = 'annotations.filesystem_cache_adapter';
+                $cacheDir = $container->getParameterBag()->resolveValue($config['file_cache_dir']);
+
+                if (!is_dir($cacheDir) && false === @mkdir($cacheDir, 0777, true) && !is_dir($cacheDir)) {
+                    throw new \RuntimeException(sprintf('Could not create cache directory "%s".', $cacheDir));
+                }
+
+                $container
+                    ->getDefinition('annotations.filesystem_cache_adapter')
+                    ->replaceArgument(2, $cacheDir)
+                ;
+            }
+        } else {
+            // Legacy code for doctrine/annotations:<1.13
             if (!class_exists(\Doctrine\Common\Cache\CacheProvider::class)) {
                 throw new LogicException('Annotations cannot be cached as the Doctrine Cache library is not installed. Try running "composer require doctrine/cache".');
             }
-
-            $cacheService = $config['cache'];
 
             if ('php_array' === $config['cache']) {
                 $cacheService = 'annotations.cache';
@@ -1508,20 +1545,19 @@ class FrameworkExtension extends Extension
 
                 $cacheService = 'annotations.filesystem_cache';
             }
-
-            $container
-                ->getDefinition('annotations.cached_reader')
-                ->replaceArgument(2, $config['debug'])
-                // temporary property to lazy-reference the cache provider without using it until AddAnnotationsCachedReaderPass runs
-                ->setProperty('cacheProviderBackup', new ServiceClosureArgument(new Reference($cacheService)))
-                ->addTag('annotations.cached_reader')
-            ;
-
-            $container->setAlias('annotation_reader', 'annotations.cached_reader');
-            $container->setAlias(Reader::class, new Alias('annotations.cached_reader', false));
-        } else {
-            $container->removeDefinition('annotations.cached_reader');
         }
+
+        $container
+            ->getDefinition('annotations.cached_reader')
+            ->replaceArgument(2, $config['debug'])
+            // temporary property to lazy-reference the cache provider without using it until AddAnnotationsCachedReaderPass runs
+            ->setProperty('cacheProviderBackup', new ServiceClosureArgument(new Reference($cacheService)))
+            ->addTag('annotations.cached_reader')
+        ;
+
+        $container->setAlias('annotation_reader', 'annotations.cached_reader');
+        $container->setAlias(Reader::class, new Alias('annotations.cached_reader', false));
+        $container->removeDefinition('annotations.psr_cached_reader');
     }
 
     private function registerPropertyAccessConfiguration(array $config, ContainerBuilder $container, PhpFileLoader $loader)
@@ -1537,13 +1573,16 @@ class FrameworkExtension extends Extension
         $magicMethods |= $config['magic_get'] ? PropertyAccessor::MAGIC_GET : 0;
         $magicMethods |= $config['magic_set'] ? PropertyAccessor::MAGIC_SET : 0;
 
+        $throw = PropertyAccessor::DO_NOT_THROW;
+        $throw |= $config['throw_exception_on_invalid_index'] ? PropertyAccessor::THROW_ON_INVALID_INDEX : 0;
+        $throw |= $config['throw_exception_on_invalid_property_path'] ? PropertyAccessor::THROW_ON_INVALID_PROPERTY_PATH : 0;
+
         $container
             ->getDefinition('property_accessor')
             ->replaceArgument(0, $magicMethods)
-            ->replaceArgument(1, $config['throw_exception_on_invalid_index'])
-            ->replaceArgument(3, $config['throw_exception_on_invalid_property_path'])
-            ->replaceArgument(4, new Reference(PropertyReadInfoExtractorInterface::class, ContainerInterface::NULL_ON_INVALID_REFERENCE))
-            ->replaceArgument(5, new Reference(PropertyWriteInfoExtractorInterface::class, ContainerInterface::NULL_ON_INVALID_REFERENCE))
+            ->replaceArgument(1, $throw)
+            ->replaceArgument(3, new Reference(PropertyReadInfoExtractorInterface::class, ContainerInterface::NULL_ON_INVALID_REFERENCE))
+            ->replaceArgument(4, new Reference(PropertyWriteInfoExtractorInterface::class, ContainerInterface::NULL_ON_INVALID_REFERENCE))
         ;
     }
 
@@ -2056,7 +2095,7 @@ class FrameworkExtension extends Extension
 
             if (!$container->getParameter('kernel.debug')) {
                 $propertyAccessDefinition->setFactory([PropertyAccessor::class, 'createCache']);
-                $propertyAccessDefinition->setArguments([null, 0, $version, new Reference('logger', ContainerInterface::IGNORE_ON_INVALID_REFERENCE)]);
+                $propertyAccessDefinition->setArguments(['', 0, $version, new Reference('logger', ContainerInterface::IGNORE_ON_INVALID_REFERENCE)]);
                 $propertyAccessDefinition->addTag('cache.pool', ['clearer' => 'cache.system_clearer']);
                 $propertyAccessDefinition->addTag('monolog.logger', ['channel' => 'cache']);
             } else {
